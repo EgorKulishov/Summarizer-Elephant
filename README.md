@@ -16,8 +16,8 @@
 1. Клонируйте репозиторий:
    ```
    bash
-   git clone <URL_ВАШЕГО_РЕПОЗИТОРИЯ>
-   cd <ПАПКА_С_ПРОЕКТОМ>
+   git clone https://github.com/EgorKulishov/Summarizer-Elephant.git
+   cd Summarizer-Elephant
    ```
 2. Создайте виртуальную среду (необязательно, но рекомендуется):
     ```
