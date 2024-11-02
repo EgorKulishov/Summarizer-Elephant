@@ -1,78 +1,75 @@
-# !pip install streamlit transformers torch
-
 import streamlit as st
 import torch
-from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 
-# Инициализация токенайзера и модели mBART
-tokenizer = MBart50TokenizerFast.from_pretrained("facebook/mbart-large-50-many-to-one-mmt")
-model = MBartForConditionalGeneration.from_pretrained("facebook/mbart-large-50-many-to-one-mmt")
+# Инициализация модели и токенайзера
+MODEL_NAME = 'cointegrated/rut5-base-absum'
+model = T5ForConditionalGeneration.from_pretrained(MODEL_NAME)
+tokenizer = T5Tokenizer.from_pretrained(MODEL_NAME)
 
-# Устанавливаем язык, на который настроен mBART
-tokenizer.src_lang = "ru_RU"
+# Выбор устройства: GPU, если доступен, иначе CPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+model.eval()
 
-# Функция сжатия текста
-def compress_text(text: str, level: str) -> str:
+# Функция суммаризации с фиксированными значениями длины для каждого уровня
+def summarize_text(text: str, max_length: int, min_length: int) -> str:
     """
-    Сжимает текст до заданного уровня сжатия.
+    Сжимает текст на основе фиксированной максимальной и минимальной длины.
 
     Параметры:
-    - text (str): Исходный текст для сжатия
-    - level (str): Уровень сжатия ("strong", "moderate", "weak")
+    - text (str): Исходный текст для суммаризации
+    - max_length (int): Максимальная длина суммаризации в токенах
+    - min_length (int): Минимальная длина суммаризации в токенах
 
     Возвращает:
     - str: Сжатый текст
     """
-    inputs = tokenizer(text, return_tensors='pt')
-    max_length = 128  # Базовая длина
+    inputs = tokenizer(text, return_tensors="pt", padding=True).to(device)
 
-    # Настройка длины текста в зависимости от уровня сжатия
-    if level == "strong":
-        max_length = 30  # Сильное сжатие: 1-2 предложения
-    elif level == "moderate":
-        max_length = 60  # Умеренное сжатие: короткий абзац
-    elif level == "weak":
-        max_length = 90  # Слабое сжатие: чуть больше информации
-
-    # Генерация суммаризации
     with torch.no_grad():
-        summary_ids = model.generate(
+        outputs = model.generate(
             **inputs,
             max_length=max_length,
-            num_beams=4,        # Использование beam search для разнообразия
-            length_penalty=2.0, # Для более коротких результатов
-            no_repeat_ngram_size=3,  # Предотвращает повтор фраз
+            min_length=min_length,
+            num_beams=4,
+            repetition_penalty=2.5,
+            length_penalty=1.0,
             early_stopping=True
         )
-    return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+    
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-# Интерфейс приложения Streamlit
+# Интерфейс Streamlit
 def main():
-    st.title("Система для сжатия текста на трех уровнях")
-    st.write("Выберите уровень сжатия и введите текст для обработки.")
+    st.title("Суммаризация текста с фиксированными уровнями сжатия")
+    st.write("Введите текст и выберите желаемый уровень сжатия.")
 
     # Ввод текста
-    input_text = st.text_area("Введите текст для сжатия:", height=200)
+    input_text = st.text_area("Введите текст для суммаризации:", height=200)
 
     # Выбор уровня сжатия
-    level = st.selectbox("Выберите уровень сжатия:", ["strong", "moderate", "weak"], index=1)
-    level_mapping = {
-        "strong": "Сильное сжатие (1-2 предложения)",
-        "moderate": "Умеренное сжатие (краткий пересказ)",
-        "weak": "Слабое сжатие (абзац)"
-    }
-    st.write(f"Выбранный уровень сжатия: {level_mapping[level]}")
+    level = st.selectbox("Выберите уровень сжатия:", ["Сильное", "Умеренное", "Слабое"], index=1)
+    
+    # Установка параметров для каждого уровня
+    if level == "Сильное":
+        max_length = 50    # Сильное сжатие (примерно 1-2 предложения)
+        min_length = 25
+    elif level == "Умеренное":
+        max_length = 100   # Умеренное сжатие (краткий пересказ)
+        min_length = 50
+    elif level == "Слабое":
+        max_length = 200   # Слабое сжатие (краткий абзац)
+        min_length = 100
 
-    # Кнопка для запуска обработки текста
+    # Кнопка для выполнения суммаризации
     if st.button("Сжать текст"):
         if input_text.strip():
-            # Сжатие текста
-            summary = compress_text(input_text, level)
-            st.subheader("Результат сжатия:")
+            summary = summarize_text(input_text, max_length, min_length)
+            st.subheader("Результат суммаризации:")
             st.write(summary)
         else:
-            st.warning("Пожалуйста, введите текст для сжатия.")
+            st.warning("Пожалуйста, введите текст для суммаризации.")
 
 if __name__ == "__main__":
     main()
-
