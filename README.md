@@ -26,9 +26,7 @@
     venv\Scripts\activate     # Для Windows
     ```
 3. Установите необходимые библиотеки:
-    ```
-    pip install -r requirements.txt
-    ```
+    `pip install -r requirements.txt`
 ## Запуск приложения
 После установки необходимых библиотек выполните следующую команду в терминале:
     ```
