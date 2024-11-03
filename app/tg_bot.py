@@ -30,7 +30,7 @@ def summarize_text(text: str, max_length: int, min_length: int) -> str:
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # Создание экземпляра бота
-API_TOKEN = '7731308012:AAFEq5-45wKYDjSc5rpogVSsR5tkfpMjob0'  # Замените на ваш токен
+API_TOKEN = 'YOUR_TOKEN'  # Замените на ваш токен
 bot = telebot.TeleBot(API_TOKEN)
 
 # Обработка команды /start
