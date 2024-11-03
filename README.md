@@ -15,7 +15,6 @@
 
 1. Клонируйте репозиторий:
    ```
-   bash
    git clone https://github.com/EgorKulishov/Summarizer-Elephant.git
    cd Summarizer-Elephant
    ```
